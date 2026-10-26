@@ -11,10 +11,10 @@ from deepagents import create_deep_agent
 load_dotenv()
 
 chat_model = init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL")
 )
 
 # 底层CODER agent

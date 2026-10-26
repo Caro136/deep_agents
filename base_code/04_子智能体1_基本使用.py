@@ -16,38 +16,96 @@ load_dotenv()
 
 # 初始化模型
 llm=init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
 )
+
+weather_llm=init_chat_model(
+    model="deepseek-v4-pro",
+    model_provider="openai",
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
+)
+
+# 定义天气助手子agent
+weather_agent = {
+    "name": "weather_helper",
+    "description": "一个天气助手", # 给主agent看
+    "system_prompt": "你是一个天气助手，统一回复：今天天气晴，温度25度", # 给llm
+    "tools": [], # 这里不需要额外工具，仅靠 prompt 回复
+    "model": weather_llm,  # 可以指定特定
+}
+
+# 定义计算助手子agent
+math_agent = {
+    "name": "math_helper",
+    "description": "一个用于处理数学计算的助手",
+    "system_prompt": "你是一个严谨的数学助手，回答用户所有的数学计算问题",
+    "tools": []
+}
+
+# 定义翻译助手子agent
+translate_agent = {
+    "name": "translate_helper",
+    "description": "一个中英相互翻译助手",
+    "system_prompt": "你是一个中英想到翻译助手，如果是中文翻译为英文，反之翻译为中文",
+    "tools": []
+}
+
 
 # 创建深度代理
 agent = create_deep_agent(
     model = llm,
-    system_prompt="你是一个强大的助手",
-    tools=[],
+    system_prompt="你是一个强大的助手，将任务交给合适的子智能体处理",
+    subagents=[weather_agent, math_agent, translate_agent], # 配置多个子智能体
+    # subagents=[] # 如果不配置，就使用默认的子智能体
 )
 
-def query_stream(query: str):
-    for chunk in agent.stream({
-        "messages": [{"role": "user", "content": query}]
-    }):
+def query_stream(query:str):
+    for chunk in agent.stream(
+            {"messages": [{"role": "user", "content": query}]}
+    ):
         # print(chunk)
-        for key, value in chunk.items():
-            if key in ["tools", "model"]:
-                message = value["messages"][0]
-                if key=="model": # 模型处理返回
-                    tool_calls = message.tool_calls # 要调用的工具列表
-                    if tool_calls: # tool_calls有值，说明准备调用工具
-                        for tool_call in tool_calls:
-                            print(f"--模型返回，决定调用工具【{tool_call['name']}】,参数为：{tool_call['args']}")
-                    else: # 如果没有，说明是模块返回的最终结果
-                        print(f"--模型返回，最终结果：{message.content}")
-                elif key=="tools": # 工具处理返回
-                    name = message.name # 工具名
-                    content = message.content # 结果数据
-                    print(f"-- 工具[{name}]执行返回结果：{content}")
+        for key,value in chunk.items():
+            if key not in ["model","tools"]:
+                continue
+            # 得到当前message对象
+            message = value["messages"][0]
+            # 模型处理的返回
+            if key == "model":
+                tool_calls = message.tool_calls
+                # 准备调用工具
+                if tool_calls:
+                    for tool_call in tool_calls:
+                        name = tool_call["name"]
+                        # 准备调用子agent (task tool)
+                        if name == "task":
+                            # "args": {
+                            #            "subagent_type": "网络搜索助手",  # 目标子 Agent
+                            #            "description": "查询2024政策"     # 下发的具体任务
+                            #         },
+                            args = tool_call["args"]
+                            print(f"-----模型返回，准备调用子智能体[{args['subagent_type']}]，具体的说明：{args['description']}")
+                        # 准备调用tool
+                        else:
+                            # "name": "read_file_content",
+                            # "args": {"filename": "需求.docx"},
+                            print(f"-----模型返回，准备调用工具[{name}]，参数为：{tool_call['args']}")
+
+                # 返回最终的结果
+                else:
+                   print(f"-----模型返回最终结果：{message.content}")
+            # 工具处理的返回
+            elif key == "tools":
+                name = message.name
+                # 子智能体的返回 task tool
+                if name == "task":
+                    print(f"-----子智能体返回结果：{message.content}")
+                # 工具的返回
+                else:
+                    print(f"-----工具返回结果：{message.content}")
 
 if __name__ == '__main__':
     query_stream("今天武汉天气怎么样? 再计算123+234-99等于几？，同时将'好好学习，天天向上'翻译为英文")

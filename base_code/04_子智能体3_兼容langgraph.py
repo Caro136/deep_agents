@@ -15,16 +15,17 @@ from tavily import TavilyClient
 load_dotenv()
 
 chat_model = init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL")
 )
 
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
 def internet_search(
     query: str,
-    max_results: int = 5,
+    max_results: int = 3,
     topic: Literal["general", "news", "finance"] = "general",
     include_raw_content: bool = False,
 ):
@@ -41,6 +42,7 @@ def internet_search(
 class MyState(TypedDict):
     # 注解messages的类型为list, messaages的数据在多个节点之间是累加的方式
     messages: Annotated[list, add_messages]
+
 def process_node(state: MyState):
     print(f"--开始处理节点：{state}")
     query = state['messages'][-1].content

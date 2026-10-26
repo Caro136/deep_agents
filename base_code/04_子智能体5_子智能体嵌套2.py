@@ -1,5 +1,6 @@
 """
 测试4_6：使用CompiledSubAgent实现三级嵌套 SubAgent
+在deepagets中，字典形式的子智能体当前还不支持嵌套，但CompiledSubAgent形式的子智能体是支持嵌套的。
 
 层级：
 CEO -> CTO -> CODER
@@ -24,16 +25,16 @@ load_dotenv()
 
 # 初始化model
 chat_model = init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL")
 )
 chat_model2 = init_chat_model(
-    model="qwen-max",
+    model="deepseek-v4-pro",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL")
 )
 
 chat_model3 = init_chat_model(
@@ -47,7 +48,7 @@ chat_model3 = init_chat_model(
 # 底层coder配置
 # 职责明确：只有他能写代码
 coder_agent = create_deep_agent(
-        model=chat_model3,
+        model=chat_model2,
         tools=[],
         subagents=[],
         name="CODER",
@@ -70,7 +71,7 @@ coder_subagent = CompiledSubAgent(
     runnable=coder_agent,
 )
 cto_agent = create_deep_agent(
-        model=chat_model2,
+        model=chat_model,
         tools=[],
         subagents=[coder_subagent],
         name="CTO",
