@@ -1,0 +1,10 @@
+[project]
+name = "deep_agents"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "deepagents>=0.7.32",
+    "langchain-openai>=1.7.2",
+    "python-dotenv>=1.2.4",
+    "tavily-python>=0.8.5",
+]
