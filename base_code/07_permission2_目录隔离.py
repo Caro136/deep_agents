@@ -10,17 +10,31 @@ from langchain.chat_models import init_chat_model
 load_dotenv()
 
 llm = init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
 )
 
 agent = create_deep_agent(
     model=llm,
     backend=FilesystemBackend(
-        root_dir="./agent_workspace"
-    )
+        root_dir="../backend_dir"
+    ),
+    permissions=[
+        # 限制工作区下某个子目录可以读写
+        FilesystemPermission(
+            operations=["read", "write"],
+            paths=["/allow_dir/**"], # 匹配根目录下的allow_dir目录所有资源
+            mode="allow"
+        ),
+        # 限制工作其它所有区域不可读写
+        FilesystemPermission(
+            operations=["read", "write"],
+            paths=["/**"], # 匹配根目录下所有资源
+            mode="deny"
+        )
+    ]
 )
 
 
