@@ -10,16 +10,20 @@ from deepagents.backends import FilesystemBackend
 load_dotenv()
 
 llm = init_chat_model(
-    model="qwen-plus",
+    model="deepseek-flash",
     model_provider="openai",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url=os.getenv("DASHSCOPE_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
 )
 
 # 2. 配置skills
 main_agent = create_deep_agent(
     model=llm,
     system_prompt="你是一个智能助手，可以使用SKILL技能！",
+    # 配置读取skill的根目录为当前项目根目录
+    backend=FilesystemBackend(root_dir="../"),
+    # 配置读取skill的目录路径
+    skills=["/skills"]
 )
 
 # 执行
@@ -29,6 +33,7 @@ result = main_agent.invoke(
             # {"role": "user", "content": "列出我的所有技能"}
             # {"role": "user", "content": "将‘我今天要坐飞机去北京潇洒一下’翻译为表情包"},
             # {"role": "user", "content": "审查一下我当前项目下08_skill.py的代码"}
+            {"role": "user", "content": "2026年10月27日晚上19点，男孩，张添意，算一下八字命理"},
         ]
     },
 )
