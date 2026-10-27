@@ -64,6 +64,8 @@ agent = create_deep_agent(
 )
 
 def query_stream(query:str):
+    # 添加子智能体名称字典，便于返回结果时识别是哪个子智能体的返回
+    subagent_names_dict:dict[str,str] = {}
     for chunk in agent.stream(
             {"messages": [{"role": "user", "content": query}]}
     ):
@@ -88,6 +90,8 @@ def query_stream(query:str):
                             #         },
                             args = tool_call["args"]
                             print(f"-----模型返回，准备调用子智能体[{args['subagent_type']}]，具体的说明：{args['description']}")
+                            # 保存调用id与子智能体的名称，调用id为key, 子智能体名称为value
+                            subagent_names_dict[tool_call["id"]] = args["subagent_type"]
                         # 准备调用tool
                         else:
                             # "name": "read_file_content",
@@ -102,10 +106,11 @@ def query_stream(query:str):
                 name = message.name
                 # 子智能体的返回 task tool
                 if name == "task":
-                    print(f"-----子智能体返回结果：{message.content}")
+                    subagent_name = subagent_names_dict[message.tool_call_id]
+                    print(f"-----子智能体[{subagent_name}]返回结果：{message.content}")
                 # 工具的返回
                 else:
-                    print(f"-----工具返回结果：{message.content}")
+                    print(f"-----工具[{name}]返回结果：{message.content}")
 
 if __name__ == '__main__':
     query_stream("今天武汉天气怎么样? 再计算123+234-99等于几？，同时将'好好学习，天天向上'翻译为英文")
